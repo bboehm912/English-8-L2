@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  margin-top: 18px;
+}
+
+.ctrl-btn {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  padding: 10px 22px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.ctrl-btn:disabled { background: #94a3b8; }
+
+.resource-card {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-group {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e2e8f0;
+}
+label { font-weight: bold; margin-bottom: 6px; display: block; }
+input, textarea, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.submit-btn {
+  width: 100%;
+  background: var(--primary);
+  color: white;
+  padding: 14px;
+  font-size: 1.05em;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.muted { color: var(--text-muted); }
+.italic { font-style: italic; }
+.subtitle { color: var(--text-muted); }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header-card">
+    <div class="header-flex">
+      <div class="header-left">
+        <div class="logo-box">
+          <img src="chisholm_logo.png" alt="Chisholm Logo" />
+        </div>
+        <div>
+          <h2>8th Grade English Language Arts</h2>
+          <p class="subtitle">Unit 1: Narrative Craft & Analysis — Day 2 (Wednesday): Plot Arc & Narrative Structure</p>
+        </div>
+      </div>
+
+      <div class="stamp-container">
+        <img class="stamp-photo" src="boehm_photo.jpg" alt="Instructor Photo" />
+        <img class="stamp-svg" src="boehm-stamp.svg" alt="Classroom Stamp" />
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('deck')">Deck</button>
+    <button class="tab-btn" onclick="switchTab('res')">Resource Hub</button>
+    <button class="tab-btn" onclick="switchTab('form')">Student Work Checkpoint</button>
+  </div>
+
+  <!-- TAB: DECK -->
+  <div id="deck-tab" class="card tab-content active">
+    <div class="bellringer-box">
+      <div>
+        <strong>Daily Bellringer Writing Prompt</strong>
+        <p id="bellringer-display" class="italic">Loading prompt...</p>
+      </div>
+      <button class="ctrl-btn" onclick="randomizeBellringer()">Shuffle</button>
+    </div>
+
+    <div class="deck-header">
+      <h3>Unit 1: Narrative Craft & Analysis</h3>
+      <span id="slide-tracker" class="std-badge">Slide 1 of {{total_slides}}</span>
+    </div>
+
+    <div id="slide-stage" class="slide-stage">
+      <!-- Slides will be injected by script.js using JSON -->
+    </div>
+
+    <div class="deck-controls">
+      <button class="ctrl-btn" id="prev-btn" onclick="moveSlide(-1)" disabled>Previous</button>
+      <button class="ctrl-btn" id="next-btn" onclick="moveSlide(1)">Next</button>
+    </div>
+  </div>
+
+  <!-- TAB: STUDENT WORK CHECKPOINT -->
+  <div id="form-tab" class="card tab-content">
+    <h3>Student Work Checkpoint & Reflection</h3>
+    <form id="checkpoint-form">
+      <!-- Dynamic form fields injected by script.js -->
+      <button type="submit" class="submit-btn">Submit Reflection</button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+let currentSlide = 1;
+let totalSlides = 1;
+let bellringers = [];
+
+// Pool of visual icons assigned if no image is defined in JSON
+const iconPool = ['🎥', '📹', '🎙️', '📺', '🎬', '📡', '🎯', '⚙️', '🔍', '💡', '🎧', '📐'];
+
+function initLesson(data) {
+  bellringers = data.bellringers || [];
+  totalSlides = (data.slides || []).length || 1;
+
+  document.getElementById('slide-tracker').innerText = `Slide 1 of ${totalSlides}`;
+
+  renderSlides(data.slides || []);
+  renderResources(data.resources || []);
+  renderForm(data.form || []);
+
+  randomizeBellringer();
+}
+
+function randomizeBellringer() {
+  if (!bellringers.length) return;
+  const idx = Math.floor(Math.random() * bellringers.length);
+  document.getElementById('bellringer-display').innerText = bellringers[idx];
+}
+
+function renderSlides(slides) {
+  const stage = document.getElementById('slide-stage');
+  stage.innerHTML = '';
+
+  slides.forEach((slide, index) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'slide' + (index === 0 ? ' active' : '');
+    wrapper.id = `slide-${index + 1}`;
+
+    // Priority: Custom Image -> Custom Emoji -> Auto-assigned Icon Pool
+    let visualMediaHTML = '';
+    if (slide.image) {
+      visualMediaHTML = `<img src="${slide.image}" style="width:110px;height:110px;object-fit:cover;border-radius:50%;border:3px solid var(--primary);" onerror="this.parentNode.innerHTML='<span style=\\'font-size:2.8em;\\'>🎥</span>';" />`;
+    } else if (slide.icon) {
+      visualMediaHTML = `<span style="font-size: 2.8em; display: block; margin-bottom: 8px;">${slide.icon}</span>`;
+    } else {
+      const fallbackIcon = iconPool[index % iconPool.length];
+      visualMediaHTML = `<span style="font-size: 2.8em; display: block; margin-bottom: 8px;">${fallbackIcon}</span>`;
+    }
+
+    wrapper.innerHTML = `
+      <div class="slide-header">
+        <h3 class="slide-title">${slide.title}</h3>
+        <span class="std-badge">${slide.standard || ''}</span>
+      </div>
+      <div class="slide-grid">
+        <div class="slide-body">
+          <ul>
+            ${(slide.bullets || []).map(b => `<li>${b}</li>`).join('')}
+          </ul>
+          ${slide.callout ? `<div class="callout-box"><strong style="color: var(--primary-dark);">Key Takeaway:</strong> ${slide.callout}</div>` : ''}
+        </div>
+        <div class="slide-visual-card">
+          ${visualMediaHTML}
+          ${slide.visual_caption ? `<small style="color: var(--text-muted); display: block; font-size: 0.82em; margin-top: 6px;">${slide.visual_caption}</small>` : ''}
+        </div>
+      </div>
+    `;
+    stage.appendChild(wrapper);
+  });
+}
+
+function moveSlide(dir) {
+  const newSlide = currentSlide + dir;
+  if (newSlide < 1 || newSlide > totalSlides) return;
+
+  document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+  currentSlide = newSlide;
+  document.getElementById(`slide-${currentSlide}`).classList.add('active');
+
+  document.getElementById('slide-tracker').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+  document.getElementById('prev-btn').disabled = currentSlide === 1;
+  document.getElementById('next-btn').disabled = currentSlide === totalSlides;
+}
+
+function renderResources(resources) {
+  const container = document.getElementById('resource-list');
+  container.innerHTML = '';
+
+  resources.forEach(res => {
+    const card = document.createElement('div');
+    card.className = 'resource-card';
+    card.innerHTML = `
+      <div>
+        <strong>${res.title}</strong><br/>
+        <small>${res.description || ''}</small>
+      </div>
+      <a href="${res.file}" class="ctrl-btn">Open Resource</a>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderForm(fields) {
+  const form = document.getElementById('checkpoint-form');
+  const submitBtn = form.querySelector('.submit-btn');
+  form.innerHTML = '';
+
+  fields.forEach(field => {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const id = `field_${field.label.replace(/\s+/g, '_').toLowerCase()}`;
+
+    let inputHTML = '';
+    if (field.type === 'short_text') {
+      inputHTML = `<input type="text" id="${id}" ${field.required ? 'required' : ''} />`;
+    } else if (field.type === 'date') {
+      inputHTML = `<input type="date" id="${id}" ${field.required ? 'required' : ''} />`;
+    } else if (field.type === 'rating_scale') {
+      inputHTML = `<select id="${id}">${(field.options || []).map(o => `<option>${o}</option>`).join('')}</select>`;
+    } else if (field.type === 'quote_citation') {
+      inputHTML = `<textarea id="${id}" rows="3" ${field.required ? 'required' : ''}></textarea>`;
+    } else if (field.type === 'select_rubric') {
+      inputHTML = `<select id="${id}"><option>-- Select Rubric Benchmark Level --</option>${(field.options || []).map(o => `<option>${o}</option>`).join('')}</select>`;
+    } else if (field.type === 'checkbox_group' || field.type === 'multi_select') {
+      inputHTML = (field.options || []).map(o => `<label><input type="checkbox" name="${id}" value="${o}" /> ${o}</label>`).join('<br/>');
+    }
+
+    group.innerHTML = `<label for="${id}">${field.label}</label>${inputHTML}`;
+    form.appendChild(group);
+  });
+
+  if (submitBtn) form.appendChild(submitBtn);
+}
+
+function switchTab(key) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+  if (key === 'deck') {
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    document.getElementById('deck-tab').classList.add('active');
+  } else if (key === 'res') {
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('res-tab').classList.add('active');
+  } else if (key === 'form') {
+    document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    document.getElementById('form-tab').classList.add('active');
+  }
+}
+window.addEventListener('DOMContentLoaded', () => initLesson({"course_title": "8th Grade English Language Arts", "unit_title": "Unit 1: Narrative Craft & Analysis", "day_title": "Day 2 (Wednesday): Plot Arc & Narrative Structure", "bellringers": ["What is the most exciting moment in your favorite book or movie? What made it feel like the ultimate turning point?", "Define 'exposition' in your own words. What three key details does an author usually reveal in the opening of a story?", "Why can't a narrative jump straight from the problem to the resolution without rising action?", "Ethics & Choice Check: Think of a story character who made a questionable choice during a conflict. How did that choice alter the plot?"], "slides": [{"title": "1. Lesson Overview & Plot Arc Baseline", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Primary Focus: Mapping the five-stage plot arc (exposition, rising action, climax, falling action, resolution).", "Core Objective: Diagram plot movement and identify key turning points in a selected short story.", "Structural Blueprint: Understanding how authors build tension, escalate conflict, and deliver meaningful resolution.", "Target Skill: Analyzing how specific dialogue or incidents move a story forward."], "callout": "Key Concept: A plot arc is not just a list of events—it is the engine of tension and character transformation.", "icon": "📈", "visual_caption": "Freytag's Pyramid / Plot Structure Model"}, {"title": "2. Stage 1: Exposition & Inciting Incident", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Setting the Stage: Introduces the protagonist, setting (time/place), and normal status quo.", "Background Context: Establishes necessary tone and preliminary character relationships.", "The Inciting Incident: The precise moment where normal life is disrupted and the central conflict begins."], "callout": "Look Closer: The inciting incident is the spark that forces the protagonist out of their comfort zone.", "icon": "🏁", "visual_caption": "Exposition & Conflict Kickoff"}, {"title": "3. Stage 2: Rising Action & Conflict Escalation", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Building Tension: A sequence of obstacles, complications, and mini-conflicts.", "Character Motivations: The protagonist takes action to solve the problem, but challenges grow tougher.", "Raising the Stakes: Explain why winning or losing matters significantly more as the story advances."], "callout": "Plot Check: Every event in the rising action must directly connect to the main conflict.", "icon": "🧗", "visual_caption": "Climbing the Tension Slope"}, {"title": "4. Stage 3: The Climax (The Turning Point)", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Peak Intensity: The moment of highest emotional tension, action, or decision.", "The Direct Confrontation: The protagonist directly faces the story's core conflict.", "The Point of No Return: The outcome determines whether the protagonist succeeds or fails—there is no going back."], "callout": "Crucial Rule: The climax isn't just action; it is the ultimate decision point for the protagonist.", "icon": "⚡", "visual_caption": "Peak Conflict Point"}, {"title": "5. Stages 4 & 5: Falling Action & Resolution", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Falling Action: The immediate aftermath of the climax; tension decreases and loose ends are addressed.", "Resolution (Denouement): A new status quo is established for the characters.", "Character Reflection: Evaluating how the protagonist has changed from the exposition to the conclusion."], "callout": "Final Reflection: A strong resolution shows transformation, even if the ending is unexpected or bittersweet.", "icon": "🌅", "visual_caption": "Resolution & New Normal"}, {"title": "6. Hands-On Diagramming Workshop", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Step 1: Identify the main conflict and climax first on your graphic organizer.", "Step 2: Trace backward to pinpoint the inciting incident in the exposition.", "Step 3: Plot at least 3 major escalation events along the rising action slope.", "Step 4: Map out the falling action and document the final character resolution."], "callout": "Class Task: Open your Plot Arc Graphic Organizer and begin mapping today's short story selection.", "icon": "📝", "visual_caption": "Story Diagramming Workflow"}], "resources": [{"title": "Plot Arc Graphic Organizer Template", "description": "Digital diagram sheet for mapping story arc elements.", "file": "Plot_Arc_Graphic_Organizer.pdf"}, {"title": "Short Story Reading Text: 'The Elevator'", "description": "Annotated short story for independent and small-group plot mapping.", "file": "The_Elevator_Short_Story.pdf"}], "form": [{"label": "Student Name", "type": "short_text", "required": true}, {"label": "Date", "type": "date", "required": true}, {"label": "Selected Short Story Title", "type": "short_text", "required": true}, {"label": "Climax Identification & Analysis: Quote or describe the moment you identified as the climax. What makes this the story's major turning point?", "type": "quote_citation", "required": true}, {"label": "Plot Arc Mastery Rating", "type": "rating_scale", "options": ["1 - Needs Support (Struggling to identify plot stages)", "2 - Developing (Can identify climax with step-by-step guidance)", "3 - Competent (Can map all 5 stages independently)", "4 - Expert (Can explain how plot events advance character development)"], "required": true}, {"label": "Practical Setup Rubric Benchmark", "type": "select_rubric", "options": ["Level 4 (Exceeds): Accurately identified all 5 arc stages with cited text evidence for each.", "Level 3 (Proficient): Accurately mapped all 5 arc stages independently.", "Level 2 (Developing): Completed plot map with minor assistance on falling action or climax.", "Level 1 (Beginning): Incomplete plot map or misplaced major story events."], "required": true}, {"label": "Student Checkpoint Pledge", "type": "checkbox_group", "options": ["I confirm I completed the plot diagram graphic organizer and submitted my story analysis reflection."], "required": true}]}));
+</script>
+<script>
+  // JSON data placeholder injected by build.py
+  const LESSON_DATA = {{lesson_json}};
+  initLesson(LESSON_DATA);
+</script>
+<script>
+let currentSlide = 1;
+let totalSlides = 1;
+let bellringers = [];
+
+// Pool of visual icons assigned if no image is defined in JSON
+const iconPool = ['🎥', '📹', '🎙️', '📺', '🎬', '📡', '🎯', '⚙️', '🔍', '💡', '🎧', '📐'];
+
+function initLesson(data) {
+  bellringers = data.bellringers || [];
+  totalSlides = (data.slides || []).length || 1;
+
+  document.getElementById('slide-tracker').innerText = `Slide 1 of ${totalSlides}`;
+
+  renderSlides(data.slides || []);
+  renderResources(data.resources || []);
+  renderForm(data.form || []);
+
+  randomizeBellringer();
+}
+
+function randomizeBellringer() {
+  if (!bellringers.length) return;
+  const idx = Math.floor(Math.random() * bellringers.length);
+  document.getElementById('bellringer-display').innerText = bellringers[idx];
+}
+
+function renderSlides(slides) {
+  const stage = document.getElementById('slide-stage');
+  stage.innerHTML = '';
+
+  slides.forEach((slide, index) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'slide' + (index === 0 ? ' active' : '');
+    wrapper.id = `slide-${index + 1}`;
+
+    // Priority: Custom Image -> Custom Emoji -> Auto-assigned Icon Pool
+    let visualMediaHTML = '';
+    if (slide.image) {
+      visualMediaHTML = `<img src="${slide.image}" style="width:110px;height:110px;object-fit:cover;border-radius:50%;border:3px solid var(--primary);" onerror="this.parentNode.innerHTML='<span style=\\'font-size:2.8em;\\'>🎥</span>';" />`;
+    } else if (slide.icon) {
+      visualMediaHTML = `<span style="font-size: 2.8em; display: block; margin-bottom: 8px;">${slide.icon}</span>`;
+    } else {
+      const fallbackIcon = iconPool[index % iconPool.length];
+      visualMediaHTML = `<span style="font-size: 2.8em; display: block; margin-bottom: 8px;">${fallbackIcon}</span>`;
+    }
+
+    wrapper.innerHTML = `
+      <div class="slide-header">
+        <h3 class="slide-title">${slide.title}</h3>
+        <span class="std-badge">${slide.standard || ''}</span>
+      </div>
+      <div class="slide-grid">
+        <div class="slide-body">
+          <ul>
+            ${(slide.bullets || []).map(b => `<li>${b}</li>`).join('')}
+          </ul>
+          ${slide.callout ? `<div class="callout-box"><strong style="color: var(--primary-dark);">Key Takeaway:</strong> ${slide.callout}</div>` : ''}
+        </div>
+        <div class="slide-visual-card">
+          ${visualMediaHTML}
+          ${slide.visual_caption ? `<small style="color: var(--text-muted); display: block; font-size: 0.82em; margin-top: 6px;">${slide.visual_caption}</small>` : ''}
+        </div>
+      </div>
+    `;
+    stage.appendChild(wrapper);
+  });
+}
+
+function moveSlide(dir) {
+  const newSlide = currentSlide + dir;
+  if (newSlide < 1 || newSlide > totalSlides) return;
+
+  document.getElementById(`slide-${currentSlide}`).classList.remove('active');
+  currentSlide = newSlide;
+  document.getElementById(`slide-${currentSlide}`).classList.add('active');
+
+  document.getElementById('slide-tracker').innerText = `Slide ${currentSlide} of ${totalSlides}`;
+  document.getElementById('prev-btn').disabled = currentSlide === 1;
+  document.getElementById('next-btn').disabled = currentSlide === totalSlides;
+}
+
+function renderResources(resources) {
+  const container = document.getElementById('resource-list');
+  container.innerHTML = '';
+
+  resources.forEach(res => {
+    const card = document.createElement('div');
+    card.className = 'resource-card';
+    card.innerHTML = `
+      <div>
+        <strong>${res.title}</strong><br/>
+        <small>${res.description || ''}</small>
+      </div>
+      <a href="${res.file}" class="ctrl-btn">Open Resource</a>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderForm(fields) {
+  const form = document.getElementById('checkpoint-form');
+  const submitBtn = form.querySelector('.submit-btn');
+  form.innerHTML = '';
+
+  fields.forEach(field => {
+    const group = document.createElement('div');
+    group.className = 'form-group';
+    const id = `field_${field.label.replace(/\s+/g, '_').toLowerCase()}`;
+
+    let inputHTML = '';
+    if (field.type === 'short_text') {
+      inputHTML = `<input type="text" id="${id}" ${field.required ? 'required' : ''} />`;
+    } else if (field.type === 'date') {
+      inputHTML = `<input type="date" id="${id}" ${field.required ? 'required' : ''} />`;
+    } else if (field.type === 'rating_scale') {
+      inputHTML = `<select id="${id}">${(field.options || []).map(o => `<option>${o}</option>`).join('')}</select>`;
+    } else if (field.type === 'quote_citation') {
+      inputHTML = `<textarea id="${id}" rows="3" ${field.required ? 'required' : ''}></textarea>`;
+    } else if (field.type === 'select_rubric') {
+      inputHTML = `<select id="${id}"><option>-- Select Rubric Benchmark Level --</option>${(field.options || []).map(o => `<option>${o}</option>`).join('')}</select>`;
+    } else if (field.type === 'checkbox_group' || field.type === 'multi_select') {
+      inputHTML = (field.options || []).map(o => `<label><input type="checkbox" name="${id}" value="${o}" /> ${o}</label>`).join('<br/>');
+    }
+
+    group.innerHTML = `<label for="${id}">${field.label}</label>${inputHTML}`;
+    form.appendChild(group);
+  });
+
+  if (submitBtn) form.appendChild(submitBtn);
+}
+
+function switchTab(key) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+  if (key === 'deck') {
+    document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    document.getElementById('deck-tab').classList.add('active');
+  } else if (key === 'res') {
+    document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    document.getElementById('res-tab').classList.add('active');
+  } else if (key === 'form') {
+    document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    document.getElementById('form-tab').classList.add('active');
+  }
+}
+window.addEventListener('DOMContentLoaded', () => initLesson({"course_title": "8th Grade English Language Arts", "unit_title": "Unit 1: Narrative Craft & Analysis", "day_title": "Day 2 (Wednesday): Plot Arc & Narrative Structure", "bellringers": ["What is the most exciting moment in your favorite book or movie? What made it feel like the ultimate turning point?", "Define 'exposition' in your own words. What three key details does an author usually reveal in the opening of a story?", "Why can't a narrative jump straight from the problem to the resolution without rising action?", "Ethics & Choice Check: Think of a story character who made a questionable choice during a conflict. How did that choice alter the plot?"], "slides": [{"title": "1. Lesson Overview & Plot Arc Baseline", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Primary Focus: Mapping the five-stage plot arc (exposition, rising action, climax, falling action, resolution).", "Core Objective: Diagram plot movement and identify key turning points in a selected short story.", "Structural Blueprint: Understanding how authors build tension, escalate conflict, and deliver meaningful resolution.", "Target Skill: Analyzing how specific dialogue or incidents move a story forward."], "callout": "Key Concept: A plot arc is not just a list of events—it is the engine of tension and character transformation.", "icon": "📈", "visual_caption": "Freytag's Pyramid / Plot Structure Model"}, {"title": "2. Stage 1: Exposition & Inciting Incident", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Setting the Stage: Introduces the protagonist, setting (time/place), and normal status quo.", "Background Context: Establishes necessary tone and preliminary character relationships.", "The Inciting Incident: The precise moment where normal life is disrupted and the central conflict begins."], "callout": "Look Closer: The inciting incident is the spark that forces the protagonist out of their comfort zone.", "icon": "🏁", "visual_caption": "Exposition & Conflict Kickoff"}, {"title": "3. Stage 2: Rising Action & Conflict Escalation", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Building Tension: A sequence of obstacles, complications, and mini-conflicts.", "Character Motivations: The protagonist takes action to solve the problem, but challenges grow tougher.", "Raising the Stakes: Explain why winning or losing matters significantly more as the story advances."], "callout": "Plot Check: Every event in the rising action must directly connect to the main conflict.", "icon": "🧗", "visual_caption": "Climbing the Tension Slope"}, {"title": "4. Stage 3: The Climax (The Turning Point)", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Peak Intensity: The moment of highest emotional tension, action, or decision.", "The Direct Confrontation: The protagonist directly faces the story's core conflict.", "The Point of No Return: The outcome determines whether the protagonist succeeds or fails—there is no going back."], "callout": "Crucial Rule: The climax isn't just action; it is the ultimate decision point for the protagonist.", "icon": "⚡", "visual_caption": "Peak Conflict Point"}, {"title": "5. Stages 4 & 5: Falling Action & Resolution", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Falling Action: The immediate aftermath of the climax; tension decreases and loose ends are addressed.", "Resolution (Denouement): A new status quo is established for the characters.", "Character Reflection: Evaluating how the protagonist has changed from the exposition to the conclusion."], "callout": "Final Reflection: A strong resolution shows transformation, even if the ending is unexpected or bittersweet.", "icon": "🌅", "visual_caption": "Resolution & New Normal"}, {"title": "6. Hands-On Diagramming Workshop", "standard": "CCSS.ELA-LITERACY.RL.8.3", "bullets": ["Step 1: Identify the main conflict and climax first on your graphic organizer.", "Step 2: Trace backward to pinpoint the inciting incident in the exposition.", "Step 3: Plot at least 3 major escalation events along the rising action slope.", "Step 4: Map out the falling action and document the final character resolution."], "callout": "Class Task: Open your Plot Arc Graphic Organizer and begin mapping today's short story selection.", "icon": "📝", "visual_caption": "Story Diagramming Workflow"}], "resources": [{"title": "Plot Arc Graphic Organizer Template", "description": "Digital diagram sheet for mapping story arc elements.", "file": "Plot_Arc_Graphic_Organizer.pdf"}, {"title": "Short Story Reading Text: 'The Elevator'", "description": "Annotated short story for independent and small-group plot mapping.", "file": "The_Elevator_Short_Story.pdf"}], "form": [{"label": "Student Name", "type": "short_text", "required": true}, {"label": "Date", "type": "date", "required": true}, {"label": "Selected Short Story Title", "type": "short_text", "required": true}, {"label": "Climax Identification & Analysis: Quote or describe the moment you identified as the climax. What makes this the story's major turning point?", "type": "quote_citation", "required": true}, {"label": "Plot Arc Mastery Rating", "type": "rating_scale", "options": ["1 - Needs Support (Struggling to identify plot stages)", "2 - Developing (Can identify climax with step-by-step guidance)", "3 - Competent (Can map all 5 stages independently)", "4 - Expert (Can explain how plot events advance character development)"], "required": true}, {"label": "Practical Setup Rubric Benchmark", "type": "select_rubric", "options": ["Level 4 (Exceeds): Accurately identified all 5 arc stages with cited text evidence for each.", "Level 3 (Proficient): Accurately mapped all 5 arc stages independently.", "Level 2 (Developing): Completed plot map with minor assistance on falling action or climax.", "Level 1 (Beginning): Incomplete plot map or misplaced major story events."], "required": true}, {"label": "Student Checkpoint Pledge", "type": "checkbox_group", "options": ["I confirm I completed the plot diagram graphic organizer and submitted my story analysis reflection."], "required": true}]}));
+</script>
+</body>
+</html>
